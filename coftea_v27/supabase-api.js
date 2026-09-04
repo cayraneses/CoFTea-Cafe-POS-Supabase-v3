@@ -49,15 +49,118 @@
     }
     return data;
   }
-  async function inventory(){const {data,error}=await sb.from("inventory").select("*").order("category").order("name");if(error)throw error;return data.map(x=>({...x,item:x.name,total:Number(x.inside||0)+Number(x.outside||0)+Number(x.stock_in||0)+Number(x.adjustments||0)}));}
-  async function saveInventory(d){
-  const sku=String(d.sku||"").trim()||("INV-"+Date.now().toString(36).toUpperCase()+"-"+Math.random().toString(36).slice(2,8).toUpperCase()); const payload={sku,name:String(d.item||"").trim(),category:d.category||"Other",unit:d.unit||"pcs",inside:Math.max(0,Number(d.inside)||0),outside:Math.max(0,Number(d.outside)||0),reorder:Math.max(0,Number(d.reorder)||0)};
+  function normalizeCupInventoryName(name){
+  const n=String(name||"").trim().toLowerCase().replace(/\s+/g," ");
+
+  if(n==="12oz" || n==="12 oz") return "12 oz";
+  if(n==="16oz" || n==="16 oz") return "16 oz";
+  if(n==="22oz" || n==="22 oz") return "22 oz";
+  if(n==="hot cups" || n==="hot cup") return "Hot Cups";
+
+  return String(name||"").trim();
+}
+
+async function inventory(){
+  const {data,error}=await sb
+    .from("inventory")
+    .select("*")
+    .order("category")
+    .order("name");
+
+  if(error)throw error;
+
+  return data.map(x=>({
+    ...x,
+    item:x.name,
+    total:
+      Number(x.inside||0)+
+      Number(x.outside||0)+
+      Number(x.stock_in||0)+
+      Number(x.adjustments||0)
+  }));
+}
+  aasync function saveInventory(d){
+  const sku=
+    String(d.sku||"").trim() ||
+    ("INV-"+Date.now().toString(36).toUpperCase()+"-"+Math.random().toString(36).slice(2,8).toUpperCase());
+
+  const rawName=String(d.item||"").trim();
+  const normalizedName=normalizeCupInventoryName(rawName);
+
+  const payload={
+    sku,
+    name:normalizedName,
+    category:d.category||"Other",
+    unit:d.unit||"pcs",
+    inside:Math.max(0,Number(d.inside)||0),
+    outside:Math.max(0,Number(d.outside)||0),
+    reorder:Math.max(0,Number(d.reorder)||0)
+  };
+
   if(!payload.name)throw new Error("Item name is required.");
-  let q=d.id?sb.from("inventory").update(payload).eq("id",d.id):sb.from("inventory").insert(payload);
-  const {data,error}=await q.select("*").single();if(error)throw error;return {...data,item:data.name,total:Number(data.inside||0)+Number(data.outside||0)+Number(data.stock_in||0)+Number(data.adjustments||0)};
+
+  let q=d.id
+    ? sb.from("inventory").update(payload).eq("id",d.id)
+    : sb.from("inventory").insert(payload);
+
+  const {data,error}=await q.select("*").single();
+
+  if(error)throw error;
+
+  return {
+    ...data,
+    item:data.name,
+    total:
+      Number(data.inside||0)+
+      Number(data.outside||0)+
+      Number(data.stock_in||0)+
+      Number(data.adjustments||0)
+  };
 }
   async function deleteInventory(id){const {error}=await sb.from("inventory").delete().eq("id",id);if(error)throw error;return {ok:true,id};}
-  async function addInventory(d){const clean=String(d.name||"").trim();if(!clean)throw new Error("Item name is required.");const {data:old}=await sb.from("inventory").select("*").ilike("name",clean).maybeSingle();if(old){const {error}=await sb.from("inventory").update({outside:Number(old.outside||0)+Number(d.quantity||0),reorder:Number(d.minimum_stock)||Number(old.reorder||0)}).eq("id",old.id);if(error)throw error;}else{const {error}=await sb.from("inventory").insert({sku:"INV-"+Date.now().toString(36).toUpperCase(),name:clean,category:d.category||"Other",unit:d.unit||"pcs",outside:Math.max(0,Number(d.quantity)||0),reorder:Number(d.minimum_stock)||0});if(error)throw error;}return inventory();}
+  async function addInventory(d){
+  const clean=normalizeCupInventoryName(d.name);
+
+  if(!clean)throw new Error("Item name is required.");
+
+  const {data:all,error:findError}=await sb
+    .from("inventory")
+    .select("*");
+
+  if(findError)throw findError;
+
+  const old=(all||[]).find(x=>
+    normalizeCupInventoryName(x.name).toLowerCase()===clean.toLowerCase()
+  );
+
+  if(old){
+    const {error}=await sb
+      .from("inventory")
+      .update({
+        name:clean,
+        outside:Number(old.outside||0)+Number(d.quantity||0),
+        reorder:Number(d.minimum_stock)||Number(old.reorder||0)
+      })
+      .eq("id",old.id);
+
+    if(error)throw error;
+  }else{
+    const {error}=await sb
+      .from("inventory")
+      .insert({
+        sku:"INV-"+Date.now().toString(36).toUpperCase(),
+        name:clean,
+        category:d.category||"Other",
+        unit:d.unit||"pcs",
+        outside:Math.max(0,Number(d.quantity)||0),
+        reorder:Number(d.minimum_stock)||0
+      });
+
+    if(error)throw error;
+  }
+
+  return inventory();
+}
   async function setInventory(d){const {error}=await sb.from("inventory").update({outside:Math.max(0,Number(d.quantity)||0)}).eq("id",d.id);if(error)throw error;return inventory();}
   async function saveSale(d){return saveSaleRpc(d,0)}
   async function updateSale(d){return saveSaleRpc(d,d.saleId)}
@@ -89,13 +192,89 @@
   async function reportAdjustmentGet(type,key){const {data,error}=await sb.from("report_adjustments").select("*").eq("type",type).eq("key",key).maybeSingle();if(error)throw error;return data;}
   async function reportAdjustmentSave(d){const [baseRows]=await Promise.all([reportRows(d.type,false)]);const key=d.key,r=baseRows.find(x=>String(x[d.type==='daily'?'date':d.type==='monthly'?'month':'year'])===String(key));const base=r||{sales:0,cash:0,gcash:0,expenses:0,cups:0};const payload={type:d.type,key,sales_delta:Number(d.sales||0)-base.sales,cash_delta:Number(d.cash||0)-base.cash,gcash_delta:Number(d.gcash||0)-base.gcash,expenses_delta:Number(d.expenses||0)-base.expenses,cups_delta:Number(d.cups||0)-base.cups};const existing=await reportAdjustmentGet(d.type,key);let q=existing?sb.from("report_adjustments").update(payload).eq("id",existing.id):sb.from("report_adjustments").insert(payload);const {error}=await q;if(error)throw error;return {ok:true};}
   async function reportAdjustmentDelete(type,key){const {error}=await sb.from("report_adjustments").delete().eq("type",type).eq("key",key);if(error)throw error;return {ok:true};}
-  async function cupSummary(date=today()){
-    const {data:salesRows,error:se}=await sb.from("sales").select("id").eq("sale_date",date).eq("status","completed");if(se)throw se;const ids=(salesRows||[]).map(x=>x.id);let sold={"12oz":0,"16oz":0,"22oz":0,"Hot Cups":0};if(ids.length){const {data:items,error}=await sb.from("sale_items").select("size,quantity").in("sale_id",ids);if(error)throw error;(items||[]).forEach(i=>{const k=["12oz","16oz","22oz"].includes(i.size)?i.size:"Hot Cups";sold[k]+=Number(i.quantity||0)});}const inv=await inventory();const rows=["12oz","16oz","22oz","Hot Cups"].map(size=>{const name=size==='12oz'?'12 oz':size==='16oz'?'16 oz':size==='22oz'?'22 oz':'Hot Cups';const x=inv.find(i=>i.name===name);return {size,soldToday:sold[size],remaining:x?x.total:0};});return {rows,totalSold:Object.values(sold).reduce((a,b)=>a+b,0)};
+ async function cupSummary(date=today()){
+  const {data:salesRows,error:se}=await sb
+    .from("sales")
+    .select("id")
+    .eq("sale_date",date)
+    .eq("status","completed");
+
+  if(se)throw se;
+
+  const ids=(salesRows||[]).map(x=>x.id);
+
+  let sold={
+    "12oz":0,
+    "16oz":0,
+    "22oz":0,
+    "Hot Cups":0
+  };
+
+  if(ids.length){
+    const {data:items,error}=await sb
+      .from("sale_items")
+      .select("size,quantity,temperature")
+      .in("sale_id",ids);
+
+    if(error)throw error;
+
+    (items||[]).forEach(i=>{
+      const temperature=String(i.temperature||"Cold").trim().toLowerCase();
+
+      let k;
+
+      if(temperature==="hot"){
+        k="Hot Cups";
+      }else{
+        const size=String(i.size||"").trim().toLowerCase().replace(/\s+/g,"");
+
+        if(size==="12oz") k="12oz";
+        else if(size==="16oz") k="16oz";
+        else if(size==="22oz") k="22oz";
+      }
+
+      if(k){
+        sold[k]+=Number(i.quantity||0);
+      }
+    });
   }
-  function subscribe(){const channel=sb.channel("coftea-live");["sales","sale_items","expenses","inventory","products","historical","report_adjustments","app_users"].forEach(table=>channel.on("postgres_changes",{event:"*",schema:"public",table},()=>{if(window.__cofteaRealtime)window.__cofteaRealtime();}));channel.subscribe();return channel;}
-  let channel=null; async function startRealtime(){if(channel)return;channel=subscribe();}
-  async function backup(){const tables=["app_users","products","inventory","sales","sale_items","expenses","historical","report_adjustments"];const out={version:1,exportedAt:new Date().toISOString(),tables:{}};for(const t of tables){const {data,error}=await sb.from(t).select("*");if(error)throw error;out.tables[t]=data;}const blob=new Blob([JSON.stringify(out,null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`CoFTea_Supabase_Backup_${today()}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);return {ok:true};}
-  async function restore(){const input=document.createElement("input");input.type="file";input.accept="application/json,.json";return new Promise((resolve,reject)=>{input.onchange=async()=>{try{const f=input.files?.[0];if(!f)return resolve({ok:false,canceled:true});const data=JSON.parse(await f.text());const order=["products","inventory","historical","expenses","report_adjustments","sales","sale_items"];for(const t of order){const rows=data.tables?.[t]||[];if(rows.length){const {error}=await sb.from(t).upsert(rows);if(error)throw error;}}notify("Cloud backup restored.");resolve({ok:true});}catch(e){reject(e)}};input.click()});}
-  window.api={login,account,updateAccount,changePassword,products,saveProduct,inventory,saveInventory,deleteInventory,addInventory,setInventory,saveSale,updateSale,sales,deleteSale,expenses,addExpense,deleteExpense,dashboard,monthly,yearly,dailyTracker,reportAdjustmentGet,reportAdjustmentSave,reportAdjustmentDelete,cupSummary,historical,addHistorical,backup,restore,startRealtime};
-  window.cofteaSupabase=sb;
-})();
+
+  const inv=await inventory();
+
+  const rows=["12oz","16oz","22oz","Hot Cups"].map(size=>{
+    const name=
+      size==="12oz" ? "12 oz" :
+      size==="16oz" ? "16 oz" :
+      size==="22oz" ? "22 oz" :
+      "Hot Cups";
+
+    /*
+      Match cup inventory regardless of how it was typed:
+      22oz / 22 oz / 22 OZ / 22 Oz
+    */
+    const matches=(inv||[]).filter(i=>
+      normalizeCupInventoryName(i.name).toLowerCase()===name.toLowerCase()
+    );
+
+    /*
+      Sum all matching rows.
+      This also protects you if you accidentally have
+      both "22oz" and "22 oz" in the database.
+    */
+    const remaining=matches.reduce(
+      (sum,i)=>sum+Number(i.total||0),
+      0
+    );
+
+    return {
+      size,
+      soldToday:sold[size],
+      remaining
+    };
+  });
+
+  return {
+    rows,
+    totalSold:Object.values(sold).reduce((a,b)=>a+b,0)
+  };
+}
