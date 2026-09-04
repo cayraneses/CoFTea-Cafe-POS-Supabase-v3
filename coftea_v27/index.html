@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>cof/tea Café POS</title>
+<style>
+:root{--brown:#6f4e37;--brown2:#8a6246;--cream:#f7efe4;--cream2:#fffaf4;--gold:#b58a4b;--border:#dfd0bf;--text:#241c17;--muted:#786e67;--danger:#b84b43;--ok:#547b50;--shadow:0 8px 25px rgba(70,45,25,.08)}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:var(--cream);color:var(--text)}
+button,input,select{font:inherit}button{cursor:pointer}.hidden{display:none!important}
+.login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}.login-card{width:390px;background:white;border:1px solid var(--border);border-radius:22px;padding:35px;box-shadow:var(--shadow)}
+.brand{font-size:34px;font-weight:900;color:var(--brown)}.subtitle{color:var(--muted);margin:4px 0 28px}
+label{display:block;font-size:13px;font-weight:800;margin:10px 0 6px}
+input,select{width:100%;border:1px solid var(--border);border-radius:10px;padding:11px;background:white;outline:none}
+input:focus,select:focus{border-color:var(--brown)}
+.btn{border:1px solid var(--border);background:white;border-radius:11px;padding:10px 14px;font-weight:800}.btn.gold{background:var(--brown);color:white;border-color:var(--brown)}.btn.danger{color:var(--danger);border-color:#e8aaa4}
+.app{min-height:100vh}.app header{height:76px;background:white;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px}
+.brand-small{font-size:26px;font-weight:900;color:var(--brown)}.brand-small span{color:var(--gold)}.user-area{display:flex;gap:10px;align-items:center}.user-btn{border:1px solid var(--border);background:white;border-radius:11px;padding:10px 14px;font-weight:800}
+.layout{display:flex;min-height:calc(100vh - 76px)}nav{width:210px;background:white;border-right:1px solid var(--border);padding:16px}.nav-btn{display:block;width:100%;border:0;background:white;text-align:left;padding:13px 14px;border-radius:11px;margin-bottom:7px;font-weight:800}.nav-btn.active,.nav-btn:hover{background:var(--cream);color:var(--brown)}
+main{flex:1;padding:24px;min-width:0}.page{display:none}.page.active{display:block}.page-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:18px}.page-title h1{margin:0;font-size:28px}
+.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.card{background:white;border:1px solid var(--border);border-radius:16px;padding:18px;box-shadow:var(--shadow)}.card .label{color:var(--muted);font-weight:800}.card .value{font-size:25px;font-weight:900;margin-top:7px}
+.pos-grid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(330px,.9fr);gap:18px}.panel{background:white;border:1px solid var(--border);border-radius:18px;padding:18px;box-shadow:var(--shadow)}
+.categories{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}.cat-btn,.inventory-cat{border:1px solid var(--border);background:var(--cream2);border-radius:12px;padding:10px 12px;font-weight:800}.cat-btn.active,.inventory-cat.active{background:var(--brown);color:white;border-color:var(--brown)}
+.products{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.product-btn{min-height:88px;border:1px solid var(--border);background:white;border-radius:14px;padding:12px;text-align:left}.product-btn:hover{background:var(--cream2);border-color:var(--gold)}.product-name{font-weight:900}.price-line{font-size:12px;color:var(--brown);margin-top:6px}
+.order-head{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);padding-bottom:12px}.cart-list{max-height:370px;overflow:auto}.cart-row{padding:11px 0;border-bottom:1px solid #eee}.cart-top{display:flex;justify-content:space-between;font-weight:900}.cart-sub{font-size:12px;color:var(--muted);margin-top:4px}.qty-controls{display:flex;gap:6px;align-items:center;margin-top:8px}.mini{border:1px solid var(--border);background:white;border-radius:8px;padding:5px 9px}.totals{border-top:2px solid var(--brown);margin-top:12px;padding-top:12px}.total-line{display:flex;justify-content:space-between;margin:8px 0}.grand{font-size:25px;font-weight:900}.payment-buttons,.cash-grid{display:flex;gap:7px;flex-wrap:wrap}.pay-btn,.quick-cash{border:1px solid var(--border);background:white;border-radius:10px;padding:10px 13px;font-weight:800}.pay-btn.active{background:var(--brown);color:white}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.table-wrap{overflow:auto;background:white;border:1px solid var(--border);border-radius:16px}table{width:100%;border-collapse:collapse;min-width:850px}th,td{padding:10px 11px;border-bottom:1px solid #eee;text-align:left}th{background:var(--cream);font-size:13px}.action-group{display:flex;gap:5px;flex-wrap:wrap}.small-btn{padding:6px 8px;border-radius:8px;border:1px solid var(--border);background:white;font-weight:800}.small-btn.danger{color:var(--danger)}
+.form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.notice{background:var(--cream);padding:12px;border-radius:11px;margin-bottom:12px}.inventory-filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.modal-back{position:fixed;inset:0;background:rgba(35,25,18,.48);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50}.modal{background:white;border-radius:20px;max-width:680px;width:100%;max-height:92vh;overflow:auto;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.2)}.modal h2{margin-top:0}.choice-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.choice{border:1px solid var(--border);background:var(--cream2);border-radius:12px;padding:12px;font-weight:800}.choice.active{background:var(--brown);color:white;border-color:var(--brown)}.modal-actions{display:flex;gap:8px;margin-top:18px}.modal-actions>*{flex:1}
+.progress{height:12px;background:#eee;border-radius:20px;overflow:hidden;margin:8px 0}.progress>div{height:100%;background:var(--brown);width:0}.muted{color:var(--muted)}.status-readonly{background:#f4f1ed;color:var(--muted)}
+@media(max-width:950px){nav{width:75px}.nav-btn{font-size:0;text-align:center}.nav-btn::first-letter{font-size:20px}.pos-grid{grid-template-columns:1fr}.products{grid-template-columns:repeat(2,1fr)}.cards{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:620px){main{padding:12px}.cards,.form-grid{grid-template-columns:1fr}.choice-grid{grid-template-columns:repeat(2,1fr)}}
+.inventory-zero-stock{background:#fff0f0!important}.inventory-zero-stock td{color:#a33}.stock-zero-badge{display:inline-block;margin-left:6px;padding:2px 6px;border-radius:10px;font-size:10px;font-weight:700;background:#d9534f;color:#fff}
+.logo-lockup{text-align:center}.logo-lockup img{width:180px;height:auto;display:block;margin:0 auto 4px}.brand-small{display:flex;align-items:center;gap:10px}.brand-small img{width:130px;height:auto}.brand-small small{font-size:11px;color:var(--muted);letter-spacing:.5px}.password-wrap{position:relative}.password-wrap input{padding-right:68px}.password-toggle{position:absolute;right:6px;top:6px;border:0;background:var(--cream);color:var(--brown);font-size:11px;font-weight:800;border-radius:8px;padding:7px 9px}.brand-small small{margin-left:0}
+\n/* ===== CoF/Tea visual refinement ===== */\n:root{--brown:#6f4e37;--brown-dark:#553a29;--cream:#f7efe5;--line:#e6d7c8;--text:#241c17;--muted:#7d7068;--shadow:0 10px 30px rgba(76,50,30,.07)}\nhtml,body{min-height:100%;overflow-x:hidden}body{background:linear-gradient(135deg,#fbf7f2 0%,#f6ede2 100%)}\n.app{min-height:100vh}.app>header{position:fixed;top:0;left:0;right:0;height:74px;z-index:100;background:rgba(255,255,255,.98);border-bottom:1px solid var(--line);box-shadow:0 3px 18px rgba(70,45,25,.05);padding:0 26px}\n.layout{display:block;min-height:100vh}.layout>nav{position:fixed;top:74px;left:0;bottom:0;width:226px;z-index:90;overflow:hidden;background:#fff;border-right:1px solid var(--line);padding:18px 12px;box-shadow:4px 0 18px rgba(70,45,25,.035)}\n.layout>main{margin-left:226px;padding:100px 28px 36px;min-height:100vh;width:auto;overflow:visible}\nnav .nav-btn{position:relative;display:flex;align-items:center;width:100%;min-height:45px;margin:3px 0;padding:0 14px;border-radius:12px;color:#4a382e;background:transparent;transition:.18s ease}\nnav .nav-btn:hover{background:#faf3ec;color:var(--brown)}nav .nav-btn.active{background:linear-gradient(90deg,#f1e5d9,#f8f1ea);color:var(--brown);box-shadow:inset 3px 0 0 var(--brown)}nav .nav-btn.active::after{content:"";position:absolute;right:12px;width:6px;height:6px;border-radius:50%;background:var(--brown)}\n.header-brand{display:flex;align-items:center;gap:11px}.header-logo-circle{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;background:#fff;border:1px solid var(--line);box-shadow:0 5px 14px rgba(70,45,25,.09);overflow:hidden;flex:0 0 auto}.header-logo-circle img{width:34px;height:34px;object-fit:contain}.header-brand-text{display:flex;flex-direction:column;line-height:1}.header-brand-text strong{font-family:Georgia,serif;font-size:23px;font-weight:500;letter-spacing:-.5px;color:#201914}.header-brand-text span{margin-top:5px;font-size:9px;font-weight:800;letter-spacing:2.4px;color:var(--brown)}\n.login{min-height:100vh;padding:24px;background:radial-gradient(circle at 50% 15%,rgba(255,255,255,.98),rgba(255,255,255,0) 42%),linear-gradient(135deg,#fbf7f2,#f2e7db)}\n.login-card{width:390px;max-width:94vw;padding:34px 36px 32px;border:1px solid var(--line);border-radius:26px;background:rgba(255,255,255,.97);box-shadow:0 22px 60px rgba(70,45,25,.12)}\n.login-brand{text-align:center;margin-bottom:24px}.login-logo-circle{width:108px;height:108px;margin:0 auto 15px;border-radius:50%;display:grid;place-items:center;background:#fff;border:1px solid var(--line);box-shadow:0 8px 24px rgba(70,45,25,.10);overflow:hidden}.login-logo-circle img{width:82px;height:82px;object-fit:contain}.login-shop-name{font-family:Georgia,serif;font-size:31px;line-height:1;letter-spacing:-1px;color:#1e1814}.login-shop-sub{margin-top:5px;font-size:10px;letter-spacing:4px;color:#3d312b}.login-title{margin-top:18px;font-size:11px;letter-spacing:2.5px;color:var(--brown);font-weight:800}.login-card label{margin-top:15px;color:#33271f}.login-card input{height:43px;border-radius:11px}.login-card .btn.gold{height:46px;border-radius:12px;letter-spacing:.5px;box-shadow:0 7px 16px rgba(111,78,55,.18)}\n.dashboard-hero{position:relative;display:flex;align-items:center;justify-content:space-between;gap:24px;padding:26px 28px;margin-bottom:20px;border-radius:20px;background:linear-gradient(115deg,#6f4e37 0%,#815b40 55%,#9b7356 100%);color:#fff;overflow:hidden;box-shadow:0 14px 35px rgba(92,61,40,.17)}.dashboard-hero::after{content:"";position:absolute;width:240px;height:240px;right:-70px;top:-95px;border-radius:50%;border:34px solid rgba(255,255,255,.08)}.dashboard-hero-copy{position:relative;z-index:1;max-width:720px}.dashboard-hero .eyebrow{font-size:9px;letter-spacing:2px;font-weight:800;opacity:.75}.dashboard-hero h1{margin:7px 0 5px;color:#fff;font-size:30px}.dashboard-hero p{margin:0;max-width:640px;color:rgba(255,255,255,.82);font-size:13px;line-height:1.6}.hero-refresh{position:relative;z-index:1;flex:0 0 auto;border:1px solid rgba(255,255,255,.35);background:#fff;color:var(--brown);border-radius:11px;padding:11px 16px;font-weight:800}\n.cards{gap:16px}.card{position:relative;min-height:120px;border:1px solid var(--line);border-radius:17px;background:rgba(255,255,255,.96);box-shadow:var(--shadow);padding:19px 20px;overflow:hidden}.card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:#d8c0aa}.card:nth-child(3n+1)::before{background:#6f4e37}.card:nth-child(3n+2)::before{background:#9a7357}.card:nth-child(3n)::before{background:#b89b7f}.card .label{font-size:13px;color:var(--muted)}.card .value{font-size:26px;margin-top:12px;color:#2a201b;letter-spacing:-.4px}\n.page-title{margin-bottom:18px}.page-title h1{font-size:28px;color:#2b211c}.panel{border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow)}.notice{border:1px solid #eadfd3;background:#fcf7f1;color:#6d5b4f}.table-wrap{border:1px solid var(--line);border-radius:16px;box-shadow:0 7px 20px rgba(70,45,25,.04)}th{background:#f8efe6;color:#604838}.btn{transition:.15s ease}.btn:hover{transform:translateY(-1px);box-shadow:0 5px 14px rgba(70,45,25,.08)}.btn.gold:hover{background:var(--brown-dark)}\n.account-page{max-width:1180px}.account-grid{max-width:none;grid-template-columns:minmax(280px,.7fr) minmax(500px,1.3fr);gap:22px}.account-profile{min-height:430px;padding:28px}.account-avatar{width:104px;height:104px;border:1px solid var(--line);background:#fff;box-shadow:0 9px 26px rgba(70,45,25,.10)}.account-avatar img{width:82px!important;height:82px!important;object-fit:contain!important}.account-form{padding:30px 32px}.account-form .form-grid.two{gap:16px}.account-form input{height:44px}.account-actions button{min-height:42px}.page{padding-bottom:24px}.modal{border:1px solid var(--line)}\n@media(max-width:1000px){.layout>nav{width:200px}.layout>main{margin-left:200px;padding-left:20px;padding-right:20px}.dashboard-hero{padding:22px}.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.account-grid{grid-template-columns:1fr}.account-profile{min-height:auto}}\n@media(max-width:700px){.app>header{height:68px;padding:0 12px}.layout>nav{top:68px;width:76px;padding:10px 8px}.layout>main{margin-left:76px;padding:88px 12px 24px}nav .nav-btn{justify-content:center;padding:0 8px;font-size:0}nav .nav-btn::first-letter{font-size:18px}nav .nav-btn.active::after{display:none}.header-brand-text{display:none}.header-logo-circle{width:42px;height:42px}.header-logo-circle img{width:29px;height:29px}.user-area{gap:5px}.user-btn{padding:8px 9px}.user-btn .user-role-pill{display:none}.dashboard-hero{align-items:flex-start;flex-direction:column;padding:21px}.dashboard-hero h1{font-size:25px}.cards{grid-template-columns:1fr}.login-card{padding:28px 24px}}\n@media(max-height:760px) and (min-width:701px){.login-card{padding:24px 30px}.login-logo-circle{width:88px;height:88px}.login-logo-circle img{width:68px;height:68px}}\n
+
+/* ===== v1.6 FINAL USER REQUESTS ===== */
+:root{--cof-header:#f8efe3;--cof-main:#f7f0e7;--cof-black:#17120f}
+html,body{width:100%;min-width:0;overflow-x:hidden;background:var(--cof-main);color:var(--cof-black)}
+.app>header{height:78px!important;background:var(--cof-header)!important;border-bottom:1px solid #dfd0bf!important;box-shadow:0 3px 16px rgba(70,45,25,.06)!important;z-index:500!important}
+.header-brand{display:flex!important;align-items:center!important;gap:12px!important;min-width:220px!important}
+.header-logo-circle{width:46px!important;height:46px!important;border-radius:50%!important;background:#fff!important;flex:0 0 46px!important}
+.header-logo-circle img{width:38px!important;height:38px!important;object-fit:contain!important}
+.header-brand-text{display:flex!important;visibility:visible!important;opacity:1!important;flex-direction:column!important;justify-content:center!important;line-height:1!important}
+.header-brand-text strong{display:block!important;font-family:Georgia,serif!important;font-size:24px!important;font-weight:500!important;letter-spacing:-.6px!important;color:#17120f!important}
+.header-brand-text span{display:block!important;margin-top:5px!important;font-size:8px!important;font-weight:800!important;letter-spacing:2.4px!important;color:#6f4e37!important}
+.layout{display:block!important;width:100%!important;min-height:100vh!important}
+.layout>nav{position:fixed!important;top:78px!important;left:0!important;bottom:0!important;width:226px!important;height:calc(100vh - 78px)!important;max-height:calc(100vh - 78px)!important;z-index:450!important;overflow:hidden!important;background:#fff!important;border-right:1px solid #e6d7c8!important}
+.layout>main{position:relative!important;display:block!important;margin-left:226px!important;width:calc(100% - 226px)!important;max-width:none!important;height:calc(100vh - 78px)!important;min-height:calc(100vh - 78px)!important;max-height:calc(100vh - 78px)!important;padding:24px 30px 42px!important;overflow-x:hidden!important;overflow-y:auto!important;scroll-padding-top:20px!important;z-index:1!important;background:var(--cof-main)!important}
+.page{width:100%!important;max-width:none!important;min-width:0!important;padding-bottom:30px!important}
+.page-title{width:100%!important;min-height:44px!important;margin:0 0 20px!important;display:flex!important;align-items:center!important;justify-content:space-between!important;gap:14px!important}
+.page-title h1,.page-title h2,.page-title h3{color:var(--cof-black)!important}
+.dashboard-hero{padding:22px 24px!important;background:linear-gradient(135deg,#fbf4eb,#f3e8dc)!important;color:var(--cof-black)!important;border:1px solid #e5d6c7!important;box-shadow:0 10px 26px rgba(70,45,25,.06)!important}
+.dashboard-hero::after{border-color:rgba(111,78,55,.08)!important}
+.dashboard-hero .eyebrow{color:#7b604d!important;opacity:1!important}
+.dashboard-hero h1{color:#111!important;font-size:30px!important}
+.dashboard-hero p{color:#4b4039!important}
+.hero-refresh{margin-left:auto!important;background:#fff!important;color:#17120f!important;border:1px solid #d9c6b3!important;box-shadow:0 4px 12px rgba(70,45,25,.06)!important}
+.cards .label,.cards .value{color:#111!important}
+.card .label{font-weight:800!important}.card .value{font-weight:900!important}
+.pos-helper{margin:0 2px 14px!important;padding:9px 11px!important;border:1px solid #eadfd3!important;border-radius:10px!important;background:#fcf7f1!important;color:#6d5b4f!important}
+.pos-products-panel{min-width:0!important;overflow:visible!important}
+.products{min-width:0!important}
+.pos-grid{width:100%!important;min-width:0!important;align-items:start!important}
+.pos-grid>.panel{min-width:0!important}
+#orderPanel{min-width:0!important}
+/* Size is chosen only after clicking a flavor. */
+.pos-size-bar{display:none!important}
+#posSizeChoices{display:none!important}
+/* Product customization is always a true modal above the fixed navigation. */
+.modal-back{position:fixed!important;inset:0!important;z-index:2000!important;background:rgba(27,19,14,.48)!important}
+.modal{position:relative!important;z-index:2001!important;max-height:calc(100vh - 34px)!important;overflow-y:auto!important}
+#productModal .modal{max-width:700px!important}
+#freeDrinkModal .modal{max-width:900px!important}
+/* Make every page's content begin safely beside the sidebar. */
+.table-wrap,.panel,.notice,.form-grid,.cards,.account-grid,.history-grid{max-width:100%!important}
+@media(max-width:1120px) and (min-width:821px){.layout>main{padding-left:22px!important;padding-right:22px!important}.pos-grid{grid-template-columns:minmax(0,1fr) minmax(310px,370px)!important}.products{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+@media(max-width:820px){.layout>nav{width:190px!important}.layout>main{margin-left:190px!important;width:calc(100% - 190px)!important;padding:20px!important}.header-brand{min-width:190px!important}.header-brand-text{display:flex!important}.pos-grid{grid-template-columns:1fr!important}.products{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+@media(max-width:620px){.app>header{height:68px!important}.layout>nav{top:68px!important;height:calc(100vh - 68px)!important}.layout>main{margin-left:76px!important;width:calc(100% - 76px)!important;height:calc(100vh - 68px)!important;max-height:calc(100vh - 68px)!important;padding:16px 12px 24px!important}.layout>nav{width:76px!important}.header-brand-text{display:none!important}.header-logo-circle{width:42px!important;height:42px!important;flex-basis:42px!important}.header-logo-circle img{width:34px!important;height:34px!important}.products{grid-template-columns:1fr!important}.dashboard-hero{padding:20px!important}.dashboard-hero h1{font-size:25px!important}}
+
+</style>
+<link rel="stylesheet" href="style.css">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#6f4e37">
+<style id="coftea-v25-input-fix">
+/* ===== v2.5 STABLE TEXT INPUTS ===== */
+input, textarea, select{pointer-events:auto!important;user-select:text!important;-webkit-user-select:text!important;caret-color:#6f4e37!important;}
+input:not([readonly]),textarea,select{position:relative;z-index:3;}
+.modal-back{z-index:1000!important;}
+.modal{z-index:1001!important;}
+.modal input,.modal textarea,.modal select{position:relative;z-index:1002!important;pointer-events:auto!important;user-select:text!important;-webkit-user-select:text!important;}
+.layout>main{position:relative;z-index:1;}
+.layout>main input,.layout>main textarea,.layout>main select{position:relative;z-index:2;}
+</style>
+<style id="coftea-logo-circle-fix">#loginPage .login-logo-circle,#app .header-logo-circle{border-radius:50%!important;background:#fff!important;border:1px solid var(--line)!important;box-shadow:0 8px 24px rgba(70,45,25,.10)!important;overflow:hidden!important;}#loginPage .login-logo-circle img,#app .header-logo-circle img{border-radius:50%!important;object-fit:cover!important;}</style>
+
+<style id="coftea-final-responsive">
+/* =========================================================
+   COF/TEA RESPONSIVE DEVICE LAYOUT
+   - Desktop: 1025px and up
+   - Tablet/Chromebook: 621px–1024px
+   - Phone: 481px–620px
+   - Small phone: 480px and below
+   This uses viewport width, not device-name detection.
+   ========================================================= */
+
+/* Base: prevent flex/grid children from forcing horizontal overflow */
+html,
+body {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+img,
+video,
+canvas,
+svg {
+  max-width: 100%;
+}
+
+button,
+input,
+select,
+textarea {
+  max-width: 100%;
+}
+
+.panel,
+.card,
+.page,
+.page-title,
+.dashboard-hero,
+.pos-products-panel,
+#orderPanel,
+.account-grid,
+.form-grid,
+.history-grid,
+.table-wrap {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* =========================================================
+   LARGE TABLET / SMALL LAPTOP — 1024px and below
+   ========================================================= */
+@media (max-width: 1024px) {
+  .app > header {
+    padding-left: 18px !important;
+    padding-right: 18px !important;
+  }
+
+  .layout > nav {
+    width: 200px !important;
+  }
+
+  .layout > main {
+    margin-left: 200px !important;
+    width: calc(100% - 200px) !important;
+    padding: 24px 20px 36px !important;
+  }
+
+  .header-brand {
+    min-width: 0 !important;
+  }
+
+  .header-brand-text strong {
+    font-size: 21px !important;
+  }
+
+  .pos-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 360px) !important;
+    gap: 14px !important;
+  }
+
+  .products {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .account-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .account-profile {
+    min-height: auto !important;
+  }
+
+  .history-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .dashboard-hero {
+    padding: 22px !important;
+  }
+
+  .table-wrap {
+    width: 100%;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .table-wrap table {
+    min-width: 760px;
+  }
+}
+
+/* =========================================================
+   TABLET / CHROMEBOOK — 821px to 900px
+   ========================================================= */
+@media (max-width: 900px) {
+  .layout > nav {
+    width: 76px !important;
+    padding: 12px 8px !important;
+  }
+
+  .layout > main {
+    margin-left: 76px !important;
+    width: calc(100% - 76px) !important;
+    padding-left: 18px !important;
+    padding-right: 18px !important;
+  }
+
+  .layout > nav .nav-btn {
+    justify-content: center !important;
+    padding-left: 7px !important;
+    padding-right: 7px !important;
+    font-size: 0 !important;
+    text-align: center !important;
+  }
+
+  .layout > nav .nav-btn::first-letter {
+    font-size: 19px !important;
+  }
+
+  .layout > nav .nav-btn.active::after {
+    display: none !important;
+  }
+
+  .header-brand-text {
+    display: flex !important;
+  }
+
+  .header-brand-text strong {
+    font-size: 20px !important;
+  }
+
+  .header-brand-text span {
+    font-size: 7px !important;
+  }
+
+  .pos-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  #orderPanel {
+    width: 100%;
+  }
+
+  .cart-list {
+    max-height: 420px;
+  }
+
+  .dashboard-hero {
+    align-items: flex-start !important;
+  }
+}
+
+/* =========================================================
+   PHONE — 620px and below
+   ========================================================= */
+@media (max-width: 620px) {
+  html,
+  body {
+    width: 100%;
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
+  .app > header {
+    height: 68px !important;
+    padding: 0 10px !important;
+  }
+
+  .layout > nav {
+    top: 68px !important;
+    bottom: 0 !important;
+    width: 64px !important;
+    height: calc(100vh - 68px) !important;
+    padding: 9px 6px !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .layout > main {
+    margin-left: 64px !important;
+    width: calc(100% - 64px) !important;
+    height: calc(100vh - 68px) !important;
+    min-height: calc(100vh - 68px) !important;
+    max-height: calc(100vh - 68px) !important;
+    padding: 14px 10px 28px !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .header-brand {
+    min-width: 0 !important;
+    gap: 7px !important;
+  }
+
+  .header-logo-circle {
+    width: 40px !important;
+    height: 40px !important;
+    flex-basis: 40px !important;
+  }
+
+  .header-logo-circle img {
+    width: 31px !important;
+    height: 31px !important;
+  }
+
+  .header-brand-text {
+    display: none !important;
+  }
+
+  .user-area {
+    gap: 5px !important;
+    min-width: 0 !important;
+  }
+
+  .user-btn,
+  .user-area > .btn {
+    min-height: 40px !important;
+    padding: 8px 9px !important;
+    font-size: 12px !important;
+  }
+
+  .owner-user-btn {
+    min-width: 0 !important;
+  }
+
+  .layout > nav .nav-btn {
+    min-height: 46px !important;
+    width: 100% !important;
+    margin: 2px 0 !important;
+    padding: 0 !important;
+    justify-content: center !important;
+    font-size: 0 !important;
+    border-radius: 10px !important;
+  }
+
+  .layout > nav .nav-btn::first-letter {
+    font-size: 18px !important;
+  }
+
+  .page {
+    width: 100% !important;
+    padding-bottom: 20px !important;
+  }
+
+  .page-title {
+    min-height: auto !important;
+    margin-bottom: 13px !important;
+    gap: 8px !important;
+    align-items: flex-start !important;
+    flex-wrap: wrap !important;
+  }
+
+  .page-title h1 {
+    font-size: 22px !important;
+    line-height: 1.2 !important;
+  }
+
+  .page-title > div {
+    max-width: 100%;
+  }
+
+  .dashboard-hero {
+    display: block !important;
+    padding: 18px !important;
+    margin-bottom: 14px !important;
+    border-radius: 16px !important;
+  }
+
+  .dashboard-hero h1 {
+    font-size: 23px !important;
+    line-height: 1.2 !important;
+  }
+
+  .dashboard-hero p {
+    font-size: 12px !important;
+    line-height: 1.5 !important;
+  }
+
+  .hero-refresh {
+    display: block !important;
+    width: 100% !important;
+    margin: 14px 0 0 !important;
+    min-height: 44px !important;
+  }
+
+  .cards {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .card {
+    min-height: 92px !important;
+    padding: 15px !important;
+    border-radius: 14px !important;
+  }
+
+  .card .value {
+    font-size: 22px !important;
+  }
+
+  .panel {
+    width: 100% !important;
+    padding: 14px !important;
+    border-radius: 15px !important;
+  }
+
+  /* POS */
+  .pos-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .pos-products-panel {
+    width: 100% !important;
+    overflow: visible !important;
+  }
+
+  .categories {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    padding-bottom: 5px !important;
+    margin-bottom: 12px !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+
+  .categories .cat-btn {
+    flex: 0 0 auto !important;
+    white-space: nowrap !important;
+    min-height: 42px !important;
+    padding: 9px 11px !important;
+  }
+
+  .pos-helper {
+    font-size: 11px !important;
+    margin-bottom: 11px !important;
+  }
+
+  .products {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  .product-btn {
+    min-height: 88px !important;
+    padding: 11px 9px !important;
+    border-radius: 12px !important;
+  }
+
+  .product-name {
+    font-size: 13px !important;
+    line-height: 1.25 !important;
+    word-break: break-word !important;
+  }
+
+  .price-line {
+    font-size: 10px !important;
+    line-height: 1.35 !important;
+  }
+
+  #orderPanel {
+    width: 100% !important;
+  }
+
+  .cart-list {
+    max-height: 320px !important;
+  }
+
+  .cart-top {
+    gap: 8px !important;
+    font-size: 13px !important;
+  }
+
+  .cart-sub {
+    font-size: 11px !important;
+    line-height: 1.4 !important;
+  }
+
+  .qty-controls {
+    flex-wrap: wrap !important;
+  }
+
+  .mini {
+    min-height: 38px !important;
+    padding: 7px 10px !important;
+  }
+
+  .payment-buttons,
+  .cash-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 7px !important;
+  }
+
+  .pay-btn,
+  .quick-cash {
+    min-height: 44px !important;
+    width: 100% !important;
+    padding: 9px 8px !important;
+  }
+
+  .actions {
+    grid-template-columns: 1fr !important;
+  }
+
+  .actions .btn {
+    min-height: 46px !important;
+  }
+
+  .grand {
+    font-size: 22px !important;
+  }
+
+  /* Forms */
+  .form-grid,
+  .form-grid.two,
+  .history-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .toolbar,
+  .inventory-toolbar {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+
+  .toolbar > *,
+  .inventory-search-wrap,
+  .inventory-filters {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+  }
+
+  .inventory-filters {
+    display: flex !important;
+    flex-wrap: wrap !important;
+  }
+
+  .inventory-cat,
+  .inventory-category-link {
+    min-height: 40px !important;
+  }
+
+  input,
+  select,
+  textarea {
+    min-height: 44px;
+    font-size: 16px !important;
+  }
+
+  .btn,
+  button {
+    touch-action: manipulation;
+  }
+
+  /* Tables remain usable by horizontal touch scrolling */
+  .table-wrap {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: thin;
+  }
+
+  .table-wrap table {
+    min-width: 760px !important;
+  }
+
+  th,
+  td {
+    white-space: nowrap;
+    padding: 9px 10px !important;
+    font-size: 12px !important;
+  }
+
+  /* Account */
+  .account-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .account-profile {
+    min-height: auto !important;
+    padding: 18px !important;
+  }
+
+  .account-form {
+    padding: 18px !important;
+  }
+
+  .account-section-head {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+
+  .shop-badge {
+    align-self: flex-start !important;
+  }
+
+  .account-actions {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Modals */
+  .modal-back {
+    padding: 10px !important;
+    align-items: flex-start !important;
+    overflow-y: auto !important;
+  }
+
+  .modal {
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: calc(100vh - 20px) !important;
+    margin: 0 !important;
+    padding: 18px !important;
+    border-radius: 16px !important;
+  }
+
+  .modal h2 {
+    font-size: 20px !important;
+  }
+
+  .choice-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 7px !important;
+  }
+
+  #productModal #sizeChoices {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+  }
+
+  #productModal #sizeChoices .size-choice {
+    min-height: 64px !important;
+    padding: 7px 3px !important;
+    font-size: 13px !important;
+  }
+
+  #productModal #sizeChoices .size-choice strong {
+    font-size: 14px !important;
+  }
+
+  #productModal #sizeChoices .size-choice span {
+    font-size: 12px !important;
+  }
+
+  .modal-actions {
+    flex-direction: column !important;
+  }
+
+  .modal-actions > * {
+    width: 100% !important;
+    min-height: 44px !important;
+  }
+
+  .app-message-back {
+    padding: 12px !important;
+  }
+
+  .app-message {
+    width: 100% !important;
+    max-width: 430px !important;
+  }
+}
+
+/* =========================================================
+   SMALL PHONE — 480px and below
+   ========================================================= */
+@media (max-width: 480px) {
+  .app > header {
+    padding-left: 7px !important;
+    padding-right: 7px !important;
+  }
+
+  .layout > nav {
+    width: 58px !important;
+  }
+
+  .layout > main {
+    margin-left: 58px !important;
+    width: calc(100% - 58px) !important;
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+  }
+
+  .header-logo-circle {
+    width: 38px !important;
+    height: 38px !important;
+    flex-basis: 38px !important;
+  }
+
+  .header-logo-circle img {
+    width: 28px !important;
+    height: 28px !important;
+  }
+
+  .user-btn,
+  .user-area > .btn {
+    min-height: 38px !important;
+    padding: 7px 8px !important;
+    font-size: 11px !important;
+  }
+
+  .page-title h1 {
+    font-size: 20px !important;
+  }
+
+  .products {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 6px !important;
+  }
+
+  .product-btn {
+    min-height: 82px !important;
+    padding: 9px 7px !important;
+  }
+
+  .product-name {
+    font-size: 12px !important;
+  }
+
+  .price-line {
+    font-size: 9px !important;
+  }
+
+  .payment-buttons,
+  .cash-grid {
+    gap: 6px !important;
+  }
+
+  .pay-btn,
+  .quick-cash {
+    font-size: 12px !important;
+  }
+
+  .choice-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  .dashboard-hero {
+    padding: 15px !important;
+  }
+
+  .dashboard-hero h1 {
+    font-size: 21px !important;
+  }
+
+  .dashboard-hero p {
+    font-size: 11px !important;
+  }
+
+  .panel {
+    padding: 12px !important;
+  }
+}
+
+/* =========================================================
+   LANDSCAPE PHONE
+   ========================================================= */
+@media (max-width: 900px) and (orientation: landscape) and (max-height: 600px) {
+  .app > header {
+    height: 60px !important;
+  }
+
+  .layout > nav {
+    top: 60px !important;
+    height: calc(100vh - 60px) !important;
+  }
+
+  .layout > main {
+    height: calc(100vh - 60px) !important;
+    max-height: calc(100vh - 60px) !important;
+    padding-top: 12px !important;
+  }
+
+  .dashboard-hero {
+    padding: 15px 18px !important;
+  }
+
+  .cart-list {
+    max-height: 240px !important;
+  }
+}
+
+/* =========================================================
+   TOUCH DEVICES
+   ========================================================= */
+@media (hover: none) and (pointer: coarse) {
+  button,
+  .btn,
+  .nav-btn,
+  .cat-btn,
+  .inventory-cat,
+  .product-btn,
+  .choice,
+  .pay-btn,
+  .quick-cash,
+  .mini {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button:not(:disabled):hover {
+    transform: none !important;
+  }
+}
+
+/* Respect devices with a display cutout / home indicator */
+@supports (padding: max(0px)) {
+  @media (max-width: 620px) {
+    .app > header {
+      padding-left: max(10px, env(safe-area-inset-left)) !important;
+      padding-right: max(10px, env(safe-area-inset-right)) !important;
+    }
+
+    .layout > main {
+      padding-bottom: max(28px, env(safe-area-inset-bottom)) !important;
+    }
+  }
+}
+</style>
+</head>
+<body>
+
+<div id="loginPage" class="login">
+  <div class="login-card">
+    <div class="login-brand">
+      <div class="login-logo-circle"><img class="logo-img" src="coftea-logo-clean.png" alt="cof/tea logo"></div>
+      <div class="login-shop-name"><strong>cof/tea</strong></div>
+      <div class="login-shop-sub">CAFÉ</div>
+      <div class="login-title">CAFÉ • POS SYSTEM</div>
+    </div>
+    <label>Username</label><input id="loginUser" autocomplete="username">
+    <label>Password</label><div class="password-wrap"><input id="loginPass" type="password" autocomplete="current-password"><button type="button" class="password-toggle" onclick="toggleLoginPassword()" aria-label="Show password">SHOW</button></div>
+    <button class="btn gold" style="width:100%;margin-top:18px" onclick="login()">LOGIN</button>
+    <div id="loginMsg" class="muted" style="text-align:center;margin-top:12px"></div>
+  </div>
+</div>
+
+<div id="app" class="app hidden">
+<header>
+  <div class="header-brand">
+    <div class="header-logo-circle"><img src="coftea-logo-clean.png" alt="cof/tea logo"></div>
+    <div class="header-brand-text"><strong>cof/tea</strong><span>CAFÉ POS</span></div>
+  </div>
+  <div class="user-area">
+    <button class="user-btn owner-user-btn" onclick="showPage('account')"><span id="headerName">Owner</span></button>
+    <button class="btn" onclick="logout()">Logout</button>
+  </div>
+</header>
+<div class="layout">
+<nav>
+<button class="nav-btn active" data-page="dashboard">🏠 Dashboard</button>
+<button class="nav-btn" data-page="pos">🧋 Point of Sale</button>
+<button class="nav-btn" data-page="sales">🧾 Sales</button>
+<button class="nav-btn" data-page="expenses">💸 Expenses</button>
+<button class="nav-btn" data-page="inventory">📦 Inventory</button>
+<button class="nav-btn" data-page="cups">🥤 Cup Tracker</button>
+<button class="nav-btn" data-page="daily">📅 Daily Sales</button>
+<button class="nav-btn" data-page="monthly">📈 Monthly Sales</button>
+<button class="nav-btn" data-page="yearly">📊 Yearly Sales</button>
+<button class="nav-btn" data-page="history">🗂️ Historical Data</button>
+<button class="nav-btn" data-page="account">👤 Account</button>
+</nav>
+
+<main>
+<section id="page-dashboard" class="page active">
+<div class="dashboard-hero">
+  <div class="dashboard-hero-copy">
+    <div class="eyebrow">COF/TEA CAFÉ • OFFLINE POS</div>
+    <h1>Business Summary</h1>
+    <p>Keep track of today's performance, monthly results, yearly totals, and daily operating expenses in one place.</p>
+  </div>
+  <button class="hero-refresh" onclick="loadDashboard()">Refresh</button>
+</div>
+<div class="cards">
+<div class="card"><div class="label">Today's Sales</div><div id="dDaily" class="value">₱0.00</div></div>
+<div class="card"><div class="label">Today's Expenses</div><div id="dExpToday" class="value">₱0.00</div></div>
+<div class="card"><div class="label">Today's Net</div><div id="dNetToday" class="value">₱0.00</div></div>
+<div class="card"><div class="label">Monthly Sales</div><div id="dMonth" class="value">₱0.00</div></div>
+<div class="card"><div class="label">Monthly Expenses</div><div id="dExpMonth" class="value">₱0.00</div></div>
+<div class="card"><div class="label">Monthly Net</div><div id="dNetMonth" class="value">₱0.00</div></div>
+<div class="card"><div class="label">Yearly Sales</div><div id="dYear" class="value">₱0.00</div></div>
+<div class="card"><div class="label">Yearly Expenses</div><div id="dExpYear" class="value">₱0.00</div></div>
+<div class="card"><div class="label">Yearly Net</div><div id="dNetYear" class="value">₱0.00</div></div>
+</div>
+</section>
+
+<section id="page-pos" class="page">
+<div class="page-title"><h1>Point of Sale</h1><button class="btn" onclick="document.getElementById('orderPanel').scrollIntoView({behavior:'smooth'})">Current Order</button></div>
+<div class="pos-grid">
+<div class="panel pos-products-panel"><div class="categories" id="categories"></div><div class="pos-helper">Select a flavor to open its options for size, temperature, free upsize, free drink, and add-ons.</div><div id="products" class="products"></div></div>
+<div class="panel" id="orderPanel">
+<div class="order-head"><strong id="orderTitle">Current Order</strong><button class="btn danger" onclick="clearCart()">Clear</button></div>
+<div id="cartList" class="cart-list"></div>
+<div class="totals">
+<div class="total-line"><span>Subtotal</span><strong id="subtotal">₱0.00</strong></div>
+<div class="total-line grand"><span>TOTAL</span><span id="total">₱0.00</span></div>
+<label>Payment Method</label><div class="payment-buttons">
+<button class="pay-btn active" onclick="setPayment('Cash',this)">Cash</button><button class="pay-btn" onclick="setPayment('GCash',this)">GCash</button><button class="pay-btn" onclick="setPayment('Card',this)">Card</button><button class="pay-btn" onclick="setPayment('Other',this)">Other</button>
+</div>
+<label>Cash / Amount Received</label><input
+  id="cashReceived"
+  type="number"
+  min="0"
+  step="0.01"
+  inputmode="decimal"
+  autocomplete="off"
+  oninput="handleCashInput(this.value)"
+>
+<div class="cash-grid" style="margin-top:8px">
+<button class="quick-cash" onclick="quickCash(50)">₱50</button><button class="quick-cash" onclick="quickCash(100)">₱100</button><button class="quick-cash" onclick="quickCash(150)">₱150</button><button class="quick-cash" onclick="quickCash(200)">₱200</button><button class="quick-cash" onclick="quickCash(500)">₱500</button><button class="quick-cash" onclick="quickCash(1000)">₱1,000</button>
+</div>
+<div class="total-line"><span>Change</span><strong id="change">₱0.00</strong></div>
+<div class="actions"><button class="btn gold" onclick="saveCurrentSale()">SAVE SALE</button><button class="btn" onclick="window.print()">PRINT</button></div>
+</div>
+</div>
+</div>
+</section>
+
+<section id="page-sales" class="page">
+<div class="page-title"><h1>Sales</h1><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><input id="salesDate" type="date" style="width:auto"><button class="btn" onclick="loadSales()">Refresh Sales</button></div></div>
+<div class="notice">Sales records are viewable here. Owner accounts can edit sales; Staff accounts can view sales but cannot edit or delete orders.</div>
+<div class="table-wrap"><table><thead><tr><th>Date</th><th>Time</th><th>Transaction</th><th>Product</th><th>Category</th><th>Size</th><th>Temp</th><th>Qty</th><th>Total</th><th>Payment</th><th>Actions</th></tr></thead><tbody id="salesTable"></tbody></table></div>
+</section>
+
+<section id="page-expenses" class="page">
+<div class="page-title"><h1>Expenses</h1><button class="btn" onclick="loadExpenses()">Refresh</button></div>
+<div class="panel">
+<input type="hidden" id="expRow"><input type="hidden" id="expId">
+<div class="form-grid">
+<div><label>Category</label><input id="expCategory" placeholder="Supplies, utilities, etc."></div>
+<div><label>Description</label><input id="expDescription"></div>
+<div><label>Amount</label><input id="expAmount" type="number" min="0" step="0.01"></div>
+<div><label>Payment Method</label><select id="expPayment"><option>Cash</option><option>GCash</option><option>Card</option><option>Other</option></select></div>
+</div>
+<label>Notes</label><input id="expNotes">
+<div style="display:flex;gap:8px;margin-top:14px"><button id="expenseSaveBtn" class="btn gold" onclick="saveExpense()">SAVE EXPENSE</button><button class="btn" onclick="clearExpenseForm()">CLEAR</button></div>
+</div>
+<div style="height:14px"></div>
+<div class="table-wrap"><table><thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Amount</th><th>Payment</th><th>Notes</th><th>Actions</th></tr></thead><tbody id="expensesTable"></tbody></table></div>
+</section>
+
+<section id="page-inventory" class="page">
+<div class="page-title"><h1>Inventory</h1><div style="display:flex;gap:8px"><button class="btn gold" onclick="openInventoryModal()">+ Add Item</button><button class="btn" onclick="loadInventory()">Refresh</button></div></div>
+<div class="notice">Inventory contains all ingredients, cups, and packaging. Cup stock is automatically deducted by completed POS sales and shown on the <strong>Cups</strong> page.</div>
+<div class="inventory-toolbar">
+  <div class="inventory-search-wrap"><label for="inventorySearch">Search Inventory</label><input id="inventorySearch" type="search" placeholder="Type item name, category, SKU, or unit..." autocomplete="off"></div>
+  <div class="inventory-filters" id="inventoryFilters"></div>
+</div>
+<div class="table-wrap"><table><thead><tr><th>SKU</th><th>Item</th><th>Category</th><th>Unit</th><th>Inside</th><th>Outside</th><th>Total Stock</th><th>Actions</th></tr></thead><tbody id="inventoryTable"></tbody></table></div>
+</section>
+
+<section id="page-cups" class="page">
+<div class="page-title"><h1>Daily Cup Tracker</h1><button class="btn" onclick="loadCups()">Refresh</button></div>
+<div class="notice"><strong>Cup Tracker is linked directly to Inventory.</strong> Every completed POS sale deducts the selected cup size from inventory. Sold Today is calculated from today's completed sales and Remaining is the current inventory stock.</div>
+<div class="cards cup-cards" style="margin-bottom:18px">
+<div class="card"><div class="label">Daily Target</div><div id="cupQuota" class="value">60 cups</div><div class="progress"><div id="cupProgress"></div></div><div id="cupProgressText" class="muted">0 / 60 cups</div></div>
+<div class="card"><div class="label">Total Sold Today</div><div id="cupsSold" class="value">0</div><div class="muted">Includes current POS sales and historical entry for today.</div></div>
+<div class="card"><div class="label">Target Status</div><div id="cupsReleased" class="value">0%</div><div class="muted">Daily target progress</div></div>
+</div>
+<div class="panel"><h3>Inventory-linked cups</h3><p class="muted">You do not need to release cups separately. Add or edit 12 oz, 16 oz, 22 oz and Hot 12 oz in Inventory. POS sales automatically deduct the correct cup stock.</p><button class="btn gold" onclick="showPage('inventory')">OPEN INVENTORY</button></div>
+
+<div class="table-wrap"><table><thead><tr><th>Size</th><th>Sold Today</th><th>Remaining Inventory</th><th>Status</th></tr></thead><tbody id="cupsTable"></tbody></table></div>
+<div style="height:14px"></div>
+<div class="panel">
+  <h3 style="margin-top:0">Cup Sales Summary</h3>
+  <div class="notice">Daily history of the total cups sold, across all cup sizes.</div>
+  <div class="table-wrap"><table><thead><tr><th>Date</th><th>Total Sold Cups</th></tr></thead><tbody id="cupSummaryTable"></tbody></table></div>
+</div>
+</section>
+
+<section id="page-daily" class="page">
+<div class="page-title"><h1>Daily Sales Tracker</h1><button class="btn" onclick="loadDailySalesTracker()">Refresh</button></div>
+<div class="notice">Daily totals are calculated from completed sales and expenses. <strong>GCash</strong> and <strong>Cash</strong> show the actual sales money paid through each payment method, not the number of payers.</div>
+<div class="table-wrap"><table><thead><tr><th>Date</th><th>Total Sales</th><th>Cups</th><th>Expenses</th><th>Net Sales</th><th>GCash</th><th>Cash Paid</th><th>Total Cash</th><th>Actions</th></tr></thead><tbody id="dailySalesTable"></tbody></table></div>
+</section>
+
+<section id="page-monthly" class="page">
+<div class="page-title"><h1>Monthly Sales & Expenses</h1><button class="btn" onclick="loadMonthlyYearly()">Refresh</button></div>
+<div class="notice">Monthly totals include new POS sales, expenses, and manually entered historical records.</div>
+<div class="table-wrap"><table><thead><tr><th>Month</th><th>Total Sales</th><th>Cash Paid</th><th>GCash Paid</th><th>Expenses</th><th>Net Sales</th><th>Actions</th></tr></thead><tbody id="monthlyTable"></tbody></table></div>
+</section>
+
+<section id="page-yearly" class="page">
+<div class="page-title"><h1>Yearly Sales & Expenses</h1><button class="btn" onclick="loadMonthlyYearly()">Refresh</button></div>
+<div class="notice">Yearly totals are calculated automatically from the same local offline data.</div>
+<div class="table-wrap"><table><thead><tr><th>Year</th><th>Total Sales</th><th>Cash Paid</th><th>GCash Paid</th><th>Expenses</th><th>Net Sales</th><th>Actions</th></tr></thead><tbody id="yearlyTable"></tbody></table></div>
+</section>
+
+<section id="page-history" class="page">
+<div class="page-title"><h1>Historical Data</h1></div>
+<div class="panel"><h3>Manually Add Past Records</h3><div class="notice">Use this only for sales/expenses/cups from your old system. These records are included in monthly and yearly reports.</div>
+<div class="form-grid history-grid">
+<div><label>Date</label><input id="hDate" type="date"></div>
+<div><label>Total Sales</label><input id="hSales" type="number" min="0" step="0.01" placeholder="₱0.00"></div>
+<div><label>Cash Paid</label><input id="hCashSales" type="number" min="0" step="0.01" placeholder="₱0.00"></div>
+<div><label>GCash Paid</label><input id="hGcashSales" type="number" min="0" step="0.01" placeholder="₱0.00"></div>
+<div><label>Total Expenses</label><input id="hExpenses" type="number" min="0" step="0.01" placeholder="₱0.00"></div>
+<div><label>Cash Expenses</label><input id="hCashExpenses" type="number" min="0" step="0.01" placeholder="₱0.00"></div>
+<div><label>GCash Expenses</label><input id="hGcashExpenses" type="number" min="0" step="0.01" placeholder="₱0.00"></div>
+<div><label>Total Sold Cups</label><input id="hCups" type="number" min="0" step="1" placeholder="0"></div>
+<div><label>Notes</label><input id="hNotes"></div>
+</div>
+<div class="notice" style="margin-top:12px">Enter your old record as totals. You do not need to separate cups by size. If Cash Paid + GCash Paid is entered, the system uses their sum as Total Sales. The same rule applies to Cash Expenses + GCash Expenses.</div>
+<button class="btn gold" style="margin-top:14px" onclick="addHistory()">SAVE HISTORICAL DATA</button></div>
+<div style="height:14px"></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Total Sales</th><th>Cash Paid</th><th>GCash Paid</th><th>Total Expenses</th><th>Cash Expenses</th><th>GCash Expenses</th><th>Total Cups Sold</th><th>Notes</th></tr></thead><tbody id="historyTable"></tbody></table></div>
+</section>
+
+<section id="page-account" class="page account-page">
+<div class="page-title"><h1>My Account</h1></div>
+<div class="account-grid">
+<div class="panel account-profile"><div class="account-avatar"><img src="coftea-logo-clean.png" alt="cof/tea logo"></div><h2 id="accountName"></h2><div class="account-role"><span id="accountRole"></span> • <span id="accountActive"></span></div><div class="account-meta"><div><span>Username</span><strong id="accountUsername"></strong></div><div><span>Shop</span><strong>cof/tea CAFÉ</strong></div></div><div class="account-actions"><button class="btn" onclick="backup()">BACKUP DATA</button><button class="btn" onclick="restore()">RESTORE DATA</button></div></div>
+<div class="panel account-form"><div class="account-section-head"><div><span class="eyebrow">PROFILE SETTINGS</span><h3>Account Details</h3></div><span class="shop-badge">cof/tea CAFÉ</span></div><div class="form-grid two"><div><label>Name</label><input id="accountEditName"></div><div><label>Username</label><input id="accountEditUsername"></div></div><button class="btn gold" onclick="saveAccountDetails()">SAVE ACCOUNT DETAILS</button><hr><h3>Change Password</h3><div class="form-grid two"><div><label>Current Password</label><input id="currentPassword" type="password"></div><div><label>New Password</label><input id="newPassword" type="password"></div><div><label>Confirm New Password</label><input id="confirmPassword" type="password"></div></div><button class="btn gold" onclick="changePassword()">CHANGE PASSWORD</button><div id="accountMsg" class="muted"></div></div>
+</div>
+</section>
+</main></div></div>
+
+<!-- CUP STATUS MODAL -->
+<div id="cupStatusModal" class="modal-back hidden"><div class="modal">
+<h2 id="cupStatusTitle">Edit Cup Status</h2>
+<div class="notice">Sold cups are calculated automatically from completed sales so the tracker stays accurate. You can correct the <strong>Remaining</strong> cups.</div>
+<input type="hidden" id="cupStatusSize">
+<label>Sold Today</label><input id="cupStatusSold" class="status-readonly" type="number" readonly>
+<label>Remaining Cups</label><input id="cupStatusRemaining" type="number" min="0" step="1">
+<div class="modal-actions"><button class="btn" onclick="closeCupStatusModal()">CANCEL</button><button class="btn gold" onclick="saveCupStatus()">SAVE STATUS</button></div>
+</div></div>
+
+<!-- PRODUCT / CUSTOMIZE MODAL -->
+<div id="productModal" class="modal-back hidden"><div class="modal">
+<h2 id="modalTitle">Customize Drink</h2>
+<div id="customBaseWrap" class="hidden">
+<label>Drink Type</label><select id="customBase" onchange="customBaseChanged()"></select>
+<label>Flavor</label><input id="customFlavor" type="text" placeholder="Enter flavor" autocomplete="off">
+</div>
+<label>Size</label><div id="sizeChoices" class="choice-grid"></div>
+<label>Temperature</label><div id="tempChoices" class="choice-grid"></div>
+<div id="tuttiWrap"><label>Tutti Frutti</label><button id="tuttiBtn" class="choice" onclick="toggleTutti()">Add Tutti Frutti +₱10</button></div>
+<div class="form-grid" style="margin-top:12px">
+  <div>
+    <label>Free Upsize</label>
+    <button id="freeUpsizeBtn" class="choice" style="width:100%" onclick="toggleFreeUpsize()">FREE UPSIZE</button>
+  </div>
+  <div>
+    <label>Free Drink</label>
+    <button id="freeDrinkBtn" class="choice" style="width:100%" onclick="toggleFreeDrink()">ADD 1 FREE DRINK</button>
+  </div>
+</div>
+<div id="freePromoNote" class="notice hidden" style="margin-top:12px">Free promotion active: the original selected drink price is retained and the free item is recorded at ₱0.00.</div>
+<label>Add-ons <span class="muted">(select multiple)</span></label><div id="addonChoices" class="choice-grid"></div>
+<div class="modal-actions"><button class="btn" onclick="closeProductModal()">CANCEL</button><button class="btn gold" onclick="addConfiguredDrink()">ADD TO ORDER</button></div>
+</div></div>
+
+<style id="coftea-v18-modal-fix">
+#productModal #sizeChoices{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:10px!important;margin:0 0 4px!important;min-height:76px!important;}
+#productModal #sizeChoices .size-choice{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;min-height:72px!important;padding:10px 8px!important;border:1px solid #e0cdbb!important;background:#fffaf5!important;color:#241c17!important;border-radius:12px!important;cursor:pointer!important;font-size:15px!important;line-height:1.25!important;}
+#productModal #sizeChoices .size-choice strong{font-size:16px!important;margin-bottom:4px!important;}
+#productModal #sizeChoices .size-choice span{font-size:14px!important;font-weight:800!important;}
+#productModal #sizeChoices .size-choice small{display:block!important;margin-top:3px!important;font-size:9px!important;color:#8a6a54!important;}
+#productModal #sizeChoices .size-choice.active{background:#6f4e37!important;color:#fff!important;border-color:#6f4e37!important;box-shadow:0 5px 12px rgba(111,78,55,.18)!important;}
+#productModal #sizeChoices .size-choice.active small{color:rgba(255,255,255,.85)!important;}
+#productModal #sizeChoices .size-choice:disabled{opacity:.55!important;cursor:not-allowed!important;}
+@media(max-width:620px){#productModal #sizeChoices{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:6px!important;}#productModal #sizeChoices .size-choice{min-height:68px!important;padding:8px 4px!important;}}
+</style>
+
+<!-- FREE DRINK SELECTION MODAL -->
+<div id="freeDrinkModal" class="modal-back hidden">
+  <div class="modal">
+    <h2>Choose Your Free Drink</h2>
+
+    <div class="notice">
+      Choose another drink or flavor for the free drink.
+      The free drink will use the <strong>same size and temperature</strong>
+      as the paid drink and will be recorded at ₱0.00.
+    </div>
+
+    <div id="freeDrinkCategories" class="categories"></div>
+
+    <div id="freeDrinkProducts" class="products"></div>
+
+    <div class="modal-actions">
+      <button class="btn" onclick="cancelFreeDrinkSelection()">CANCEL</button>
+    </div>
+  </div>
+</div>
+
+<!-- INVENTORY MODAL -->
+<div id="inventoryModal" class="modal-back hidden"><div class="modal">
+<h2 id="invTitle">Inventory Item</h2><input type="hidden" id="invRow"><input type="hidden" id="invSKU"><input type="hidden" id="invOriginalSKU">
+<label>Item Name</label><input id="invItem" type="text" autocomplete="off" placeholder="Type item name">
+<label>Category</label><input id="invCategory" type="text" list="inventoryCategoryList" autocomplete="off" placeholder="Type or choose a category"><datalist id="inventoryCategoryList"><option value="Powder"><option value="Syrup"><option value="Tea & Coffee"><option value="Other"><option value="Cups"><option value="Packaging"></datalist>
+<label>Unit</label><input id="invUnit" placeholder="pcs, bottle, kg, pack">
+<div class="form-grid"><div><label>Inside / Stock Room</label><input id="invInside" type="number" min="0"></div><div><label>Outside</label><input id="invOutside" type="number" min="0"></div></div>
+<div class="modal-actions"><button class="btn" onclick="closeInventoryModal()">CANCEL</button><button class="btn gold" onclick="saveInventoryItem()">SAVE ITEM</button></div>
+</div></div>
+
+
+<!-- ===== COF/TEA CENTERED MESSAGE POPUP ===== -->
+<div id="appMessageModal" class="app-message-back hidden" role="dialog" aria-modal="true" aria-labelledby="appMessageTitle">
+  <div class="app-message" role="document">
+    <div id="appMessageIcon" class="app-popup-icon success" aria-hidden="true">✓</div>
+    <h2 id="appMessageTitle" class="app-popup-title">Success</h2>
+    <p id="appMessageText" class="app-popup-message"></p>
+    <div class="app-popup-actions">
+      <button id="appMessageOk" type="button" class="btn gold">OK</button>
+    </div>
+  </div>
+</div>
+
+<script id="coftea-popup-system">
+(function(){
+  let returnFocus=null;
+
+  function popupKind(message){
+    const s=String(message||'').toLowerCase();
+    if(s.startsWith('error') || s.includes('failed') || s.includes('unable') || s.includes('invalid') || s.includes('less than')) return 'error';
+    if(s.includes('saved') || s.includes('success') || s.includes('updated') || s.includes('deleted') || s.includes('recorded') || s.includes('added') || s.includes('changed')) return 'success';
+    return 'warning';
+  }
+
+  function popupTitle(kind){
+    return kind==='success'?'Saved Successfully':(kind==='error'?'Something went wrong':'Please check');
+  }
+
+  window.showAppMessage=function(message,kind){
+    const modal=document.getElementById('appMessageModal');
+    if(!modal) return;
+    kind=kind||popupKind(message);
+    returnFocus=document.activeElement;
+    const icon=document.getElementById('appMessageIcon');
+    icon.className='app-popup-icon '+kind;
+    icon.textContent=kind==='success'?'✓':(kind==='error'?'!':'!');
+    document.getElementById('appMessageTitle').textContent=popupTitle(kind);
+    document.getElementById('appMessageText').textContent=String(message??'');
+    modal.classList.remove('hidden');
+    requestAnimationFrame(function(){document.getElementById('appMessageOk')?.focus();});
+  };
+
+  window.closeAppMessage=function(){
+    const modal=document.getElementById('appMessageModal');
+    if(modal) modal.classList.add('hidden');
+    // Restore focus without scrolling. This prevents the popup from interfering with text inputs.
+    try{ if(returnFocus && document.contains(returnFocus)) returnFocus.focus({preventScroll:true}); }catch(e){}
+  };
+
+  document.getElementById('appMessageOk')?.addEventListener('click',window.closeAppMessage);
+  document.getElementById('appMessageModal')?.addEventListener('click',function(e){
+    if(e.target===this) window.closeAppMessage();
+  });
+  document.addEventListener('keydown',function(e){
+    const modal=document.getElementById('appMessageModal');
+    if(!modal || modal.classList.contains('hidden')) return;
+    if(e.key==='Escape' || e.key==='Enter'){ e.preventDefault(); window.closeAppMessage(); }
+  });
+
+  // Replace native alert() with the centered CoF/Tea popup for save/error/warning messages.
+  window.alert=function(message){ window.showAppMessage(message); };
+})();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<script src="supabase-api.js"></script>
+<script src="renderer.js"></script>
+<div id="reportEditModal" class="modal-back hidden">
+  <div class="modal report-edit-modal">
+    <h2 id="reportEditTitle">Edit Report</h2>
+    <div class="notice" id="reportEditNotice">Edit the totals shown for this report period. This creates a report correction and does not change individual POS transactions.</div>
+    <input type="hidden" id="reportEditType"><input type="hidden" id="reportEditKey">
+    <div class="form-grid two report-edit-grid">
+      <div><label>Total Sales</label><input id="reportEditSales" type="number" min="0" step="0.01"></div>
+      <div><label>Cash Paid</label><input id="reportEditCash" type="number" min="0" step="0.01"></div>
+      <div><label>GCash Paid</label><input id="reportEditGcash" type="number" min="0" step="0.01"></div>
+      <div><label>Expenses</label><input id="reportEditExpenses" type="number" min="0" step="0.01"></div>
+      <div id="reportEditCupsWrap"><label>Total Sold Cups</label><input id="reportEditCups" type="number" min="0" step="1"></div>
+    </div>
+    <div class="modal-actions"><button class="btn" onclick="closeReportEdit()">CANCEL</button><button class="btn gold" onclick="saveReportEdit()">SAVE CHANGES</button></div>
+  </div>
+</div>
+<script>if("serviceWorker" in navigator && location.protocol.startsWith("http")){navigator.serviceWorker.register("./sw.js").catch(()=>{});}</script>
+<script>
+/* ===== Login show/hide password ===== */
+function toggleLoginPassword(){
+  const input = document.getElementById('loginPass');
+  const button = document.querySelector('#loginPage .password-toggle');
+  if(!input || !button) return;
+
+  const showing = input.type === 'text';
+  input.type = showing ? 'password' : 'text';
+  button.textContent = showing ? 'SHOW' : 'HIDE';
+  button.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+
+  // Keep the cursor/focus in the password field.
+  try { input.focus({preventScroll:true}); } catch(e) { input.focus(); }
+}
+</script>
+</body>
+</html>

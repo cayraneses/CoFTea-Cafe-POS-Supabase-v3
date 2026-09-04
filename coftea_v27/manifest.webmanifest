@@ -1,0 +1,13 @@
+{
+  "name": "cof/tea Café POS",
+  "short_name": "cof/tea POS",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f7f0e7",
+  "theme_color": "#6f4e37",
+  "orientation": "any",
+  "icons": [
+    {"src":"coftea-icon.png","sizes":"192x192","type":"image/png"},
+    {"src":"coftea-icon.png","sizes":"512x512","type":"image/png"}
+  ]
+}

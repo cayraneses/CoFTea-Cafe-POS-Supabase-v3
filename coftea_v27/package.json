@@ -1,0 +1,47 @@
+{
+  "name": "coftea-cafe-pos",
+  "version": "3.0.0",
+  "description": "CoF/Tea Caf\u00e9 POS with Supabase cloud sync, realtime monitoring, Windows installer and mobile PWA",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron .",
+    "build:win": "electron-builder --win"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "electron": "^37.2.6",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.coftea.offlinepos",
+    "productName": "CoFTea Offline POS",
+    "files": [
+      "**/*",
+      "!node_modules/.cache/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "coftea.ico"
+    },
+    "icon": "coftea.ico",
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "CoF/Tea Caf\u00e9 POS",
+      "installerIcon": "coftea.ico",
+      "uninstallerIcon": "coftea.ico",
+      "deleteAppDataOnUninstall": false
+    }
+  }
+}
