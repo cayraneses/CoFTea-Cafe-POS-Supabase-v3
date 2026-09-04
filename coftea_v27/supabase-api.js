@@ -79,7 +79,7 @@ async function inventory(){
       Number(x.adjustments||0)
   }));
 }
-  aasync function saveInventory(d){
+  async function saveInventory(d){
   const sku=
     String(d.sku||"").trim() ||
     ("INV-"+Date.now().toString(36).toUpperCase()+"-"+Math.random().toString(36).slice(2,8).toUpperCase());
@@ -273,8 +273,49 @@ async function inventory(){
     };
   });
 
-  return {
+    return {
     rows,
     totalSold:Object.values(sold).reduce((a,b)=>a+b,0)
   };
 }
+
+  window.api = {
+    login,
+    account,
+    updateAccount,
+    changePassword,
+
+    products,
+    saveProduct,
+
+    inventory,
+    saveInventory,
+    deleteInventory,
+    addInventory,
+    setInventory,
+
+    saveSale,
+    updateSale,
+    sales,
+    deleteSale,
+
+    expenses,
+    addExpense,
+    deleteExpense,
+
+    historical,
+    addHistorical,
+
+    dashboard,
+    monthly,
+    yearly,
+    dailyTracker,
+
+    reportAdjustmentGet,
+    reportAdjustmentSave,
+    reportAdjustmentDelete,
+
+    cupSummary
+  };
+
+})();
