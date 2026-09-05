@@ -7,7 +7,25 @@
   }
   const sb=window.supabase.createClient(cfg,key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
   const err=async(e)=>{if(e)throw new Error(e.message||String(e));};
-  const today=()=>new Date().toISOString().slice(0,10);
+  // All business dates use Philippine time (Asia/Manila), not UTC.
+  const manilaParts=(date=new Date())=>new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Manila",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(date).reduce((o,x)=>(o[x.type]=x.value,o),{});
+  const today=()=>{const p=manilaParts();return `${p.year}-${p.month}-${p.day}`;};
+  const manilaTime=(value)=>{
+    const s=String(value??"").trim();
+    if(!s)return "";
+    // PostgreSQL TIME values have no timezone. The POS database currently records
+    // these values in UTC, so convert time-only values to Philippine time.
+    const m=s.match(/^(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d+))?)?$/);
+    if(m){
+      let h=(Number(m[1])+8)%24;
+      return `${String(h).padStart(2,"0")}:${m[2]}:${m[3]||"00"}${m[4]?"."+m[4]:""}`;
+    }
+    const d=new Date(s);
+    if(!Number.isNaN(d.getTime())){
+      return new Intl.DateTimeFormat("en-PH",{timeZone:"Asia/Manila",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}).format(d);
+    }
+    return s;
+  };
   async function currentProfile(){
     const {data:{user}}=await sb.auth.getUser(); if(!user)return null;
     const {data,error}=await sb.from("app_users").select("*").eq("auth_user_id",user.id).maybeSingle(); if(error)throw error; return data;
@@ -164,12 +182,37 @@ async function inventory(){
   async function setInventory(d){const {error}=await sb.from("inventory").update({outside:Math.max(0,Number(d.quantity)||0)}).eq("id",d.id);if(error)throw error;return inventory();}
   async function saveSale(d){return saveSaleRpc(d,0)}
   async function updateSale(d){return saveSaleRpc(d,d.saleId)}
+  async function ensureCupInventoryNames(){
+    const {data,error}=await sb.from("inventory").select("id,name");
+    if(error)throw error;
+    const canonical=["12 oz","16 oz","22 oz","Hot Cups"];
+    for(const wanted of canonical){
+      const matches=(data||[]).filter(x=>normalizeCupInventoryName(x.name).toLowerCase()===wanted.toLowerCase());
+      if(!matches.length)continue;
+      const exact=matches.find(x=>String(x.name||"").trim().toLowerCase()===wanted.toLowerCase());
+      if(exact)continue;
+      // Rename only when the canonical row does not already exist. This fixes
+      // older rows such as 22oz without creating duplicate unique names.
+      const target=matches[0];
+      const {error:updateError}=await sb.from("inventory").update({name:wanted}).eq("id",target.id);
+      if(updateError)throw updateError;
+    }
+  }
   async function saveSaleRpc(d,saleId){
-    const {data,error}=await sb.rpc("save_sale",{p_sale_id:Number(saleId)||null,p_items:d.items,p_payment:d.payment||"Cash",p_cash:Number(d.cash)||0,p_user_id:Number(d.userId)||null});if(error)throw error;return data;
+    await ensureCupInventoryNames();
+    const items=(Array.isArray(d.items)?d.items:[]).map(item=>({
+      ...item,
+      cupType:String(item.temperature||"").trim().toLowerCase()==="hot"?"Hot Cups":(
+        String(item.size||"").trim().toLowerCase().replace(/\s+/g,"")==="12oz"?"12 oz":
+        String(item.size||"").trim().toLowerCase().replace(/\s+/g,"")==="16oz"?"16 oz":
+        String(item.size||"").trim().toLowerCase().replace(/\s+/g,"")==="22oz"?"22 oz":item.cupType
+      )
+    }));
+    const {data,error}=await sb.rpc("save_sale",{p_sale_id:Number(saleId)||null,p_items:items,p_payment:d.payment||"Cash",p_cash:Number(d.cash)||0,p_user_id:Number(d.userId)||null});if(error)throw error;return data;
   }
   async function sales(date=today()){
     const {data,error}=await sb.from("sales").select("*,app_users(username,name),sale_items(*)").eq("sale_date",date).eq("status","completed").order("id",{ascending:false});if(error)throw error;
-    return data.map(s=>({...s,username:s.app_users?.username||"",name:s.app_users?.name||"",items:s.sale_items.map(i=>`${i.product_name} ${i.size} x${i.quantity}`).join(" | "),item_details:s.sale_items}));
+    return data.map(s=>({...s,sale_time:manilaTime(s.sale_time),username:s.app_users?.username||"",name:s.app_users?.name||"",items:s.sale_items.map(i=>`${i.product_name} ${i.size} x${i.quantity}`).join(" | "),item_details:s.sale_items}));
   }
   async function deleteSale(id){const {data,error}=await sb.rpc("delete_sale",{p_sale_id:Number(id)});if(error)throw error;return data;}
   async function expenses(date=today()){const {data,error}=await sb.from("expenses").select("*").eq("expense_date",date).order("id",{ascending:false});if(error)throw error;return data;}
@@ -279,7 +322,7 @@ async function inventory(){
   };
 }
 
-  window.api = {
+    window.api = {
     login,
     account,
     updateAccount,

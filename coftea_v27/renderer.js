@@ -7,14 +7,21 @@ let saleBusy=false,expenseBusy=false,inventoryBusy=false;
 
 const $=id=>document.getElementById(id);
 const money=n=>"₱"+Number(n||0).toLocaleString("en-PH",{minimumFractionDigits:2,maximumFractionDigits:2});
-const today=()=>new Date().toISOString().slice(0,10);
+const today=()=>{const p=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Manila",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date()).reduce((o,x)=>(o[x.type]=x.value,o),{});return `${p.year}-${p.month}-${p.day}`};
 const displayDate=v=>{const s=String(v||"").slice(0,10),m=s.match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?`${m[2]}/${m[3]}/${m[1]}`:s};
 const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 function err(e){const msg=e?.message||String(e)||"Unknown error";console.error(e);notify(msg,true)}
 function notify(msg,isError=false){let t=$("cofteaToast");if(!t){t=document.createElement("div");t.id="cofteaToast";t.style.cssText="position:fixed;right:22px;bottom:22px;z-index:99999;max-width:360px;padding:12px 16px;border-radius:12px;background:#fff;border:1px solid #dfd0bf;box-shadow:0 12px 30px rgba(70,45,25,.15);font-weight:800;color:#241c17;opacity:0;transform:translateY(8px);transition:.2s;pointer-events:none";document.body.appendChild(t)}t.textContent=msg;t.style.borderColor=isError?"#e8aaa4":"#dfd0bf";t.style.color=isError?"#b84b43":"#241c17";t.style.opacity="1";t.style.transform="translateY(0)";clearTimeout(t._timer);t._timer=setTimeout(()=>{t.style.opacity="0";t.style.transform="translateY(8px)"},2200)}
 function restoreInputFocus(id){setTimeout(()=>{const el=$(id);if(el){el.focus({preventScroll:true});if(typeof el.setSelectionRange==="function"){const n=el.value.length;try{el.setSelectionRange(n,n)}catch(_e){}}}},80)}
 function isStaff(){return String(currentUser?.role||"").toLowerCase()==="staff"}
-function toggleLoginPassword(){const i=$("loginPass"),b=document.querySelector(".password-toggle");if(i.type==="password"){i.type="text";b.textContent="HIDE"}else{i.type="password";b.textContent="SHOW"}}
+function toggleLoginPassword(){
+  const i=$("loginPass"),b=document.querySelector("#loginPage .password-toggle");
+  if(!i)return;
+  const show=i.type==="password";
+  i.type=show?"text":"password";
+  if(b){b.textContent=show?"HIDE":"SHOW";b.setAttribute("aria-label",show?"Hide password":"Show password");b.type="button";}
+  try{i.focus({preventScroll:true});}catch(_e){i.focus();}
+}
 
 async function login(){
   const u=$("loginUser").value.trim(),p=$("loginPass").value;
@@ -26,7 +33,17 @@ function enterApp(){
   $("loginPage").classList.add("hidden");$("app").classList.remove("hidden");$("headerName").textContent=(String(currentUser.role||"").toLowerCase()==="owner"?"Owner":(currentUser.role||currentUser.name||currentUser.username));if($("headerRole"))$("headerRole").textContent="";applyRolePermissions();loadAll();showPage("dashboard");try{window.api.startRealtime?.()}catch(_e){}
 }
 function logout(){currentUser=null;cart=[];editingTransactionId=null;sessionStorage.removeItem("posUser");$("app").classList.add("hidden");$("loginPage").classList.remove("hidden");$("loginUser").value="";$("loginPass").value="";$("loginMsg").textContent="";$("loginUser")?.focus()}
-function applyRolePermissions(){const notice=document.querySelector("#page-sales .notice");if(notice)notice.innerHTML=isStaff()?"Sales records are viewable. <strong>Staff accounts cannot edit or delete sales orders.</strong>":"Owner accounts can edit or delete completed sales."}
+function applyRolePermissions(){
+  const staffPages=new Set(["pos","inventory","cups","sales","expenses","daily","history","account"]);
+  document.querySelectorAll(".nav-btn").forEach(btn=>{
+    const page=btn.dataset.page;
+    const visible=!isStaff()||staffPages.has(page);
+    btn.style.display=visible?"flex":"none";
+  });
+  const notice=document.querySelector("#page-sales .notice");
+  if(notice)notice.innerHTML=isStaff()?"Sales records are viewable. <strong>Staff accounts cannot edit or delete sales orders.</strong>":"Owner accounts can edit or delete completed sales.";
+  if(isStaff()&&["dashboard","monthly","yearly"].includes(document.querySelector(".page.active")?.id?.replace("page-","")))showPage("pos");
+}
 async function loadAll(){try{products=await window.api.products();ensureProductManagerUI();renderPosSizeChoices();await Promise.all([loadDashboard(),loadSales(),loadExpenses(),loadInventory(),loadCups(),loadDailySalesTracker(),loadAccount(),loadMonthlyYearly(),loadHistory()]);renderCategories();renderProducts();renderCart()}catch(e){err(e)}}
 
 document.querySelectorAll(".nav-btn").forEach(b=>b.addEventListener("click",()=>showPage(b.dataset.page)));
@@ -294,6 +311,8 @@ inputObserver.observe(document.body,{childList:true,subtree:true});
 initStableInputs();
 
 $("loginPass")?.addEventListener("keydown",e=>{if(e.key==="Enter")login()});
+$("loginPage")?.querySelector(".password-toggle")?.addEventListener("click",e=>{e.preventDefault();toggleLoginPassword();});
+$("loginPage")?.querySelector(".password-toggle")?.setAttribute("type","button");
 initStableInputs();
 $("salesDate")?.addEventListener("change",loadSales);
 window.addEventListener("load",()=>{const saved=sessionStorage.getItem("posUser");if(saved){try{currentUser=JSON.parse(saved);enterApp()}catch(e){sessionStorage.removeItem("posUser")}}else{$("loginUser")?.focus()}});
