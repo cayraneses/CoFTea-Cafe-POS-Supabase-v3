@@ -1,5 +1,45 @@
-const CACHE='coftea-pos-v1';
-const ASSETS=['./','./index.html','./style.css','./renderer.js','./supabase-config.js','./supabase-api.js','./coftea-logo-clean.png','./coftea-icon.png','./manifest.webmanifest'];
-self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting())));
-self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));
-self.addEventListener('fetch',e=>{const u=new URL(e.request.url);if(u.origin===location.origin)e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(x=>{const c=x.clone();caches.open(CACHE).then(cache=>cache.put(e.request,c));return x})));});
+const CACHE='coftea-pos-v20260921-stable1';
+
+const ASSETS=[
+  './',
+  './index.html',
+  './style.css',
+  './renderer.js?v=20260921-stable1',
+  './supabase-config.js',
+  './supabase-api.js?v=20260921-stable1',
+  './offline-adapter.js?v=20260921-stable1',
+  './coftea-logo-clean.png',
+  './coftea-icon.png',
+  './manifest.webmanifest'
+];
+
+self.addEventListener('install',event=>{
+  event.waitUntil(
+    caches.open(CACHE)
+      .then(cache=>cache.addAll(ASSETS))
+      .then(()=>self.skipWaiting())
+  );
+});
+
+self.addEventListener('activate',event=>{
+  event.waitUntil(
+    caches.keys()
+      .then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key))))
+      .then(()=>self.clients.claim())
+  );
+});
+
+self.addEventListener('fetch',event=>{
+  const url=new URL(event.request.url);
+  if(url.origin!==location.origin)return;
+
+  event.respondWith(
+    fetch(event.request)
+      .then(response=>{
+        const copy=response.clone();
+        caches.open(CACHE).then(cache=>cache.put(event.request,copy)).catch(()=>{});
+        return response;
+      })
+      .catch(()=>caches.match(event.request).then(hit=>hit||caches.match('./index.html')))
+  );
+});

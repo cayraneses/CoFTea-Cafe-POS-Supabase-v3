@@ -1,13 +1,23 @@
 {
-  "name": "cof/tea Café POS",
-  "short_name": "cof/tea POS",
+  "id": "./",
+  "name": "CoF/Tea Café POS",
+  "short_name": "CoF/Tea POS",
+  "description": "CoF/Tea Café point-of-sale system with offline-first local storage and online Supabase synchronization.",
   "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "background_color": "#f7f0e7",
   "theme_color": "#6f4e37",
   "orientation": "any",
+  "categories": ["business", "productivity"],
+  "prefer_related_applications": false,
   "icons": [
-    {"src":"coftea-icon.png","sizes":"192x192","type":"image/png"},
-    {"src":"coftea-icon.png","sizes":"512x512","type":"image/png"}
+    {"src":"coftea-icon.png","sizes":"192x192","type":"image/png","purpose":"any maskable"},
+    {"src":"coftea-icon.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}
+  ],
+  "shortcuts": [
+    {"name":"Point of Sale","short_name":"POS","url":"./index.html#pos","icons":[{"src":"coftea-icon.png","sizes":"192x192"}]},
+    {"name":"Inventory","short_name":"Inventory","url":"./index.html#inventory","icons":[{"src":"coftea-icon.png","sizes":"192x192"}]}
   ]
 }
